@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Visiting Card</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a1a; font-family: 'Montserrat', sans-serif; }
+  .dc-root { width: 100vw; height: 100vh; }
+  .app-shell {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    background:
+      radial-gradient(circle at top left, rgba(240, 165, 0, 0.15), transparent 24%),
+      linear-gradient(135deg, #191511 0%, #241d16 100%);
+  }
+  .canvas-pane {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+  }
+  .editor-pane {
+    width: 360px;
+    max-width: 100%;
+    background: rgba(250, 244, 235, 0.98);
+    border-left: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: -18px 0 50px rgba(0, 0, 0, 0.22);
+    overflow-y: auto;
+  }
+  .editor-scroll {
+    padding: 24px 18px 120px;
+  }
+  .editor-kicker {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #b05a17;
+  }
+  .editor-title {
+    margin-top: 8px;
+    font-size: 24px;
+    line-height: 1.05;
+    font-weight: 800;
+    color: #1f1610;
+  }
+  .editor-copy {
+    margin-top: 10px;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    color: rgba(31, 22, 16, 0.75);
+  }
+  .editor-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    margin-bottom: 18px;
+  }
+  .editor-button,
+  .editor-upload {
+    appearance: none;
+    border: none;
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .editor-button {
+    background: #1f1610;
+    color: #fff9f0;
+  }
+  .editor-upload {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0a500;
+    color: #1f1610;
+  }
+  .editor-section {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  .editor-section h3 {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #5b3b20;
+    margin-bottom: 12px;
+  }
+  .editor-field {
+    margin-top: 10px;
+  }
+  .editor-field:first-of-type {
+    margin-top: 0;
+  }
+  .editor-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(31, 22, 16, 0.7);
+  }
+  .editor-input,
+  .editor-textarea {
+    width: 100%;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: #fffdfa;
+    color: #1f1610;
+    border-radius: 12px;
+    padding: 11px 12px;
+    font: inherit;
+    font-size: 13px;
+  }
+  .editor-textarea {
+    min-height: 84px;
+    resize: vertical;
+  }
+  .editor-help {
+    margin-top: 8px;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 12px;
+    line-height: 1.45;
+    color: rgba(31, 22, 16, 0.7);
+  }
+  .editor-file-note {
+    margin-top: 10px;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 12px;
+    color: rgba(31, 22, 16, 0.72);
+  }
+  .editor-input:focus,
+  .editor-textarea:focus {
+    outline: none;
+    border-color: rgba(240, 165, 0, 0.9);
+    box-shadow: 0 0 0 3px rgba(240, 165, 0, 0.16);
+  }
+  @media (max-width: 980px) {
+    .app-shell {
+      flex-direction: column;
+    }
+    .editor-pane {
+      width: 100%;
+      border-left: none;
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.18);
+    }
+    .canvas-pane {
+      min-height: 62vh;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="dc-root" id="root"></div>
+
+<script type="text/babel">
+
+const PRINT_EXPORT = {
+  width: 354,
+  height: 200,
+};
+
+const DEFAULT_CONTENT = {
+  page: {
+    title: 'Visiting Card — Riverside Restaurant & Bar',
+    canvasTitle: 'Visiting Card — Riverside Restaurant & Bar',
+  },
+  brand: {
+    name: 'Riverside',
+    nameSuffix: ' & Bar',
+    fullName: 'RIVERSIDE',
+    fullNameSub: 'RESTAURANT & BAR',
+    tagline: 'Fine Dining · Restaurant',
+    category: 'Fine Dining',
+    badge: {
+      label: 'Restroelite',
+    },
+  },
+  contact: {
+    phone: '+977 9862466900',
+    email: 'riverside@example.com',
+    website: 'psinepal.com.np/restroelite',
+    address: 'Riverside Road, Kathmandu',
+  },
+  qr: {
+    url: 'https://g.page/r/CQWRxw5Dw8JeEAI/review',
+  },
+  assets: {
+    restaurantPhoto: 'assets/restro-photo.jpg',
+  },
+};
+
+/* ── QR Code (real, scannable — SVG output for crisp print/export) ── */
+function QRCodeSVG({ url, size = 72, fgColor = "#000", bgColor = "white", centerLogo = null }) {
+  const qr = React.useMemo(() => {
+    if (!url) return null;
+    const encoded = qrcode(0, centerLogo ? 'H' : 'M');
+    encoded.addData(url);
+    encoded.make();
+    return encoded;
+  }, [url, centerLogo]);
+
+  const moduleCount = qr ? qr.getModuleCount() : 0;
+  const cells = [];
+  if (qr) {
+    for (let row = 0; row < moduleCount; row += 1) {
+      for (let col = 0; col < moduleCount; col += 1) {
+        if (qr.isDark(row, col)) {
+          cells.push(<rect key={`${row}-${col}`} x={col} y={row} width="1" height="1" />);
+        }
+      }
+    }
+  }
+
+  const logoSize = Math.round(size * 0.26);
+  const logoOffset = Math.round((size - logoSize) / 2);
+
+  return (
+    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0, overflow: 'hidden' }}>
+      {qr && (
+        <svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${moduleCount} ${moduleCount}`}
+          xmlns="http://www.w3.org/2000/svg"
+          shapeRendering="crispEdges"
+          style={{ display: 'block' }}
+        >
+          <rect width={moduleCount} height={moduleCount} fill={bgColor === 'transparent' ? '#ffffff' : bgColor} />
+          <g fill={fgColor}>{cells}</g>
+        </svg>
+      )}
+      {centerLogo && (
+        <div style={{
+          position: 'absolute', left: logoOffset, top: logoOffset,
+          width: logoSize, height: logoSize,
+          background: 'white', borderRadius: 100, padding: 1,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          pointerEvents: 'none',
+        }}>
+          <img src={centerLogo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OutputPanel({ onExportFront, onExportBack, isPreparing }) {
+  return (
+    <div style={{
+      position: 'fixed',
+      left: 20,
+      bottom: 20,
+      zIndex: 999,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      padding: '12px 14px',
+      borderRadius: 14,
+      background: 'rgba(20,20,20,0.9)',
+      color: 'white',
+      boxShadow: '0 16px 40px rgba(0,0,0,0.35)',
+      backdropFilter: 'blur(10px)',
+    }}>
+      <div style={{display:'flex', flexDirection:'column', gap:2}}>
+        <span style={{fontSize:13, fontWeight:700, letterSpacing:'0.02em'}}>SVG Export</span>
+        <span style={{fontSize:11, color:'rgba(255,255,255,0.7)'}}>Download front or back as separate SVG files</span>
+      </div>
+      <button
+        onClick={onExportFront}
+        disabled={isPreparing}
+        style={{
+          border:'none',
+          borderRadius:10,
+          padding:'10px 14px',
+          fontSize:12,
+          fontWeight:700,
+          cursor:isPreparing ? 'wait' : 'pointer',
+          background:'#f0a500',
+          color:'#1a1a1a',
+        }}
+      >
+        Export Front SVG
+      </button>
+      <button
+        onClick={onExportBack}
+        disabled={isPreparing}
+        style={{
+          border:'1px solid rgba(255,255,255,0.18)',
+          borderRadius:10,
+          padding:'10px 14px',
+          fontSize:12,
+          fontWeight:700,
+          cursor:isPreparing ? 'wait' : 'pointer',
+          background:'#ffffff',
+          color:'#1a1a1a',
+        }}
+      >
+        Export Back SVG
+      </button>
+    </div>
+  );
+}
+
+/* ── Food photo placeholder (rich pasta/food scene) ── */
+function FoodPhoto({ width, height }) {
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="food-bg" cx="60%" cy="40%" r="70%">
+          <stop offset="0%" stopColor="#8B4513"/>
+          <stop offset="40%" stopColor="#654321"/>
+          <stop offset="100%" stopColor="#3d1a0a"/>
+        </radialGradient>
+        <radialGradient id="plate" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#f0e8d0"/>
+          <stop offset="100%" stopColor="#d4c4a0"/>
+        </radialGradient>
+        <radialGradient id="sauce" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#cc3300"/>
+          <stop offset="100%" stopColor="#991100"/>
+        </radialGradient>
+      </defs>
+      {/* background */}
+      <rect width={width} height={height} fill="url(#food-bg)"/>
+      {/* dark texture blobs */}
+      <ellipse cx={width*0.7} cy={height*0.2} rx={width*0.3} ry={height*0.25} fill="#2a1005" opacity="0.6"/>
+      <ellipse cx={width*0.1} cy={height*0.8} rx={width*0.25} ry={height*0.2} fill="#1a0a02" opacity="0.5"/>
+      {/* plate */}
+      <ellipse cx={width*0.45} cy={height*0.55} rx={width*0.38} ry={height*0.32} fill="url(#plate)" opacity="0.9"/>
+      {/* pasta swirls */}
+      {[0,20,40,60,80,100].map(offset => (
+        <path key={offset} d={`M${width*0.2+offset*0.3} ${height*0.5} q${width*0.08} -${height*0.12} ${width*0.14} 0 q${width*0.06} ${height*0.1} ${width*0.12} 0`}
+          stroke="#c8a060" strokeWidth="3" fill="none" opacity="0.7" transform={`translate(${-offset*0.5},${offset*0.2})`}/>
+      ))}
+      {/* sauce */}
+      <ellipse cx={width*0.45} cy={height*0.48} rx={width*0.18} ry={height*0.14} fill="url(#sauce)" opacity="0.85"/>
+      {/* tomato hint */}
+      <circle cx={width*0.72} cy={height*0.18} r={height*0.14} fill="#cc2200" opacity="0.8"/>
+      <circle cx={width*0.72} cy={height*0.18} r={height*0.1} fill="#dd3311" opacity="0.9"/>
+      {/* green herbs */}
+      <ellipse cx={width*0.38} cy={height*0.42} rx={5} ry={3} fill="#3a7a2a" opacity="0.9" transform={`rotate(-20,${width*0.38},${height*0.42})`}/>
+      <ellipse cx={width*0.52} cy={height*0.45} rx={4} ry={2.5} fill="#2d6020" opacity="0.9" transform={`rotate(15,${width*0.52},${height*0.45})`}/>
+      <ellipse cx={width*0.44} cy={height*0.53} rx={5} ry={2} fill="#3a7a2a" opacity="0.9" transform={`rotate(-10,${width*0.44},${height*0.53})`}/>
+      {/* overlay gradient to blend with card */}
+      <rect width={width} height={height} fill="url(#food-fade)" opacity="0.3"/>
+    </svg>
+  );
+}
+
+/* ── SVG Icons ── */
+const PhoneIcon = ({ color = "#c41e3a", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="2" width="16" height="20" rx="3" fill={color} opacity="0.15"/>
+    <path d="M6.5 2h11A1.5 1.5 0 0 1 19 3.5v17A1.5 1.5 0 0 1 17.5 22h-11A1.5 1.5 0 0 1 5 20.5v-17A1.5 1.5 0 0 1 6.5 2z" stroke={color} strokeWidth="1.5"/>
+    <path d="M9 6.5l1.5 3-1 1a7 7 0 0 0 4 4l1-1 3 1.5-1 2a9 9 0 0 1-9.5-9.5l2-1z" fill={color}/>
+  </svg>
+);
+
+const EmailIcon = ({ color = "#c41e3a", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="4" width="20" height="16" rx="3" stroke={color} strokeWidth="1.5" fill={color} fillOpacity="0.1"/>
+    <path d="M2 7l10 7 10-7" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+const WebIcon = ({ color = "#c41e3a", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.5" fill={color} fillOpacity="0.1"/>
+    <path d="M12 3c-2.5 3-4 5.4-4 9s1.5 6 4 9M12 3c2.5 3 4 5.4 4 9s-1.5 6-4 9M3 12h18" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+const LocationIcon = ({ color = "#c41e3a", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke={color} strokeWidth="1.5" fill={color} fillOpacity="0.15"/>
+    <circle cx="12" cy="9" r="2.5" fill={color}/>
+  </svg>
+);
+
+/* ── Fork (decorative food icon in SVG) ── */
+function FoodLogoSVG({ size = 56 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* plate / smile arc */}
+      <path d="M14 34 Q28 48 42 34" stroke="#c41e3a" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+      {/* steam lines */}
+      <path d="M22 18 Q24 14 22 10" stroke="#c41e3a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      <path d="M28 16 Q30 12 28 8" stroke="#c41e3a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      {/* fork */}
+      <line x1="38" y1="10" x2="38" y2="32" stroke="#c41e3a" strokeWidth="2.5" strokeLinecap="round"/>
+      <line x1="35" y1="10" x2="35" y2="18" stroke="#c41e3a" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="41" y1="10" x2="41" y2="18" stroke="#c41e3a" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M35 18 Q38 22 41 18" stroke="#c41e3a" strokeWidth="2" fill="none"/>
+      {/* spatula handle */}
+      <line x1="18" y1="38" x2="28" y2="24" stroke="#c41e3a" strokeWidth="2.5" strokeLinecap="round"/>
+      <rect x="26" y="18" width="8" height="10" rx="2" stroke="#c41e3a" strokeWidth="2" fill="none" transform="rotate(-40 30 23)"/>
+    </svg>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   FRONT SIDE — Logo centered on amber bg
+   (like the "FreshFood" card)
+══════════════════════════════════════════════ */
+function CardFront({ content, cardRef = null }) {
+  const { brand } = content;
+  const amber = "#f0a500";
+  return (
+    <div style={{
+      width: 354, height: 200,
+      borderRadius: 16,
+      background: amber,
+      position: 'relative',
+      overflow: 'hidden',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'column',
+    }} ref={cardRef}>
+      {/* subtle radial depth */}
+      <div style={{
+        position:'absolute',inset:0,
+        background:'radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.12) 0%, transparent 70%)',
+      }}/>
+      {/* corner shadows */}
+      <div style={{
+        position:'absolute',inset:0,
+        background:'radial-gradient(ellipse at 0% 100%, rgba(0,0,0,0.15) 0%, transparent 50%), radial-gradient(ellipse at 100% 0%, rgba(0,0,0,0.1) 0%, transparent 50%)',
+      }}/>
+      {/* Restroelite badge — top right */}
+      <div style={{
+        position:'absolute', top:12, right:14,
+        display:'flex', alignItems:'center', gap:5,
+        background:'#e09400', borderRadius:20,
+        padding:'3px 8px',
+        boxShadow:'0 1px 4px rgba(0,0,0,0.2)',
+      }}>
+        <div style={{
+          width:14, height:14,
+          display:'flex', alignItems:'center', justifyContent:'center',
+        }}>
+          <img src="assets/logo-white-trans.png" style={{width:'100%', height:'100%', objectFit:'contain'}} />
+        </div>
+        <span style={{fontFamily:"'Montserrat',sans-serif", fontSize:7, fontWeight:700, color:'#1a1a1a', letterSpacing:'0.08em', textTransform:'uppercase'}}>{brand.badge.label}</span>
+      </div>
+      {/* centered logo block */}
+      <div style={{ position:'relative', zIndex:1, display:'flex', alignItems:'center', gap:14 }}>
+        <img src="assets/restro-logo.png" style={{width:60, height:60, objectFit:'contain'}} />
+        <div>
+          <div style={{
+            fontFamily:"'Montserrat',sans-serif",
+            fontWeight:800,
+            fontSize:26,
+            color:'#1a1a1a',
+            letterSpacing:'-0.01em',
+            lineHeight:1,
+          }}>
+            {brand.name}
+            <span style={{color:'#c41e3a', fontWeight:800}}>{brand.nameSuffix}</span>
+          </div>
+          <div style={{
+            fontFamily:"'Open Sans',sans-serif",
+            fontWeight:300,
+            fontSize:10,
+            color:'rgba(0,0,0,0.65)',
+            letterSpacing:'0.12em',
+            textTransform:'uppercase',
+            marginTop:4,
+          }}>{brand.tagline}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   BACK SIDE — Contact info + food photo
+   (like the "Michal Smith" card)
+══════════════════════════════════════════════ */
+function CardBack({ photoSrc, content, qrUrl, cardRef = null }) {
+  const { brand, contact, qr } = content;
+  const activeQrUrl = qrUrl || qr.url;
+  const amber = "#f0a500";
+  const red   = "#c41e3a";
+
+  return (
+    <div style={{
+      width: 354, height: 200,
+      borderRadius: 16,
+      background: amber,
+      position: 'relative',
+      overflow: 'hidden',
+    }} ref={cardRef}>
+      {/* ── right photo panel — full bleed image ── */}
+      <div style={{
+        position:'absolute', right:0, top:0, bottom:0, width:170,
+        overflow:'hidden',
+      }}>
+        {/* actual restaurant photo */}
+        <img
+          src={photoSrc}
+          alt="Restaurant"
+          style={{
+            width:'100%', height:'100%',
+            objectFit:'cover', objectPosition:'center',
+            display:'block',
+          }}
+        />
+        {/* dark overlay on photo */}
+        <div style={{
+          position:'absolute', inset:0,
+          background:'rgba(0,0,0,0.32)',
+        }}/>
+        {/* curved SVG mask — bowed/bent strip separating amber from photo */}
+        <svg
+          style={{position:'absolute', inset:0, overflow:'visible'}}
+          width="170" height="200"
+          viewBox="0 0 170 200"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {/* amber fill — curves inward (bowed left) */}
+          <path d="M0 0 C55 50, 55 150, 0 200 L-10 200 L-10 0 Z" fill={amber}/>
+          {/* red bent accent band — bowed curve */}
+          <path d="M0 0 C55 50, 55 150, 0 200 C58 150, 58 50, 6 0 Z" fill={red}/>
+        </svg>
+      </div>
+
+      {/* ── left content panel ── */}
+      <div style={{
+        position:'relative', zIndex:2,
+        width:205, height:'100%',
+        padding:'16px 14px 14px 18px',
+        display:'flex', flexDirection:'column', justifyContent:'space-between',
+      }}>
+        {/* name + title */}
+        <div>
+          <div style={{
+            fontFamily:"'Montserrat',sans-serif",
+            fontSize:18, fontWeight:800,
+            color:'#1a1a1a', lineHeight:1.1,
+            letterSpacing:'-0.01em',
+          }}>{brand.fullName}<br/>
+            <span style={{fontWeight:400, fontSize:16, letterSpacing:'0.02em'}}>{brand.fullNameSub}</span>
+          </div>
+          <div style={{display:'flex', alignItems:'center', gap:6, marginTop:4}}>
+            <span style={{
+              fontFamily:"'Open Sans',sans-serif",
+              fontSize:9, fontWeight:400,
+              color:'rgba(0,0,0,0.6)',
+              letterSpacing:'0.08em',
+              textTransform:'uppercase',
+            }}>{brand.category}</span>
+            <div style={{width:24, height:1.5, background:red}}></div>
+          </div>
+        </div>
+
+        {/* contact items */}
+        <div style={{display:'flex', flexDirection:'column', gap:6}}>
+          <div style={{display:'flex', alignItems:'center', gap:8}}>
+            <PhoneIcon color={red} size={14}/>
+            <div style={{display:'flex', flexDirection:'column', gap:0}}>
+              <span style={{fontFamily:"'Open Sans',sans-serif", fontSize:8.5, color:'#1a1a1a', fontWeight:600}}>{contact.phone}</span>
+              <span style={{fontFamily:"'Open Sans',sans-serif", fontSize:8, color:'rgba(0,0,0,0.55)', fontWeight:400}}>{contact.email}</span>
+            </div>
+          </div>
+          <div style={{display:'flex', alignItems:'center', gap:8}}>
+            <WebIcon color={red} size={14}/>
+            <div style={{display:'flex', flexDirection:'column', gap:0}}>
+              <span style={{fontFamily:"'Open Sans',sans-serif", fontSize:8.5, color:'#1a1a1a', fontWeight:600}}>{contact.website}</span>
+              <span style={{fontFamily:"'Open Sans',sans-serif", fontSize:8, color:'rgba(0,0,0,0.55)'}}>{contact.address}</span>
+            </div>
+          </div>
+          <div style={{display:'flex', alignItems:'center', gap:8}}>
+            <LocationIcon color={red} size={14}/>
+            <span style={{fontFamily:"'Open Sans',sans-serif", fontSize:8.5, color:'#1a1a1a', fontWeight:600}}>{contact.address}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── QR code ── */}
+      <div style={{
+        position:'absolute', zIndex:5,
+        right:12, bottom:12,
+        background:'rgba(255,255,255,0.95)',
+        borderRadius:6,
+        padding:4,
+        boxShadow:'0 2px 10px rgba(0,0,0,0.35)',
+      }}>
+        <QRCodeSVG url={activeQrUrl} size={54} fgColor="#1a1a1a" bgColor="white" centerLogo="assets/google-logo.png"/>
+      </div>
+
+      {/* ── Restroelite badge — amber bg matching card ── */}
+      <div style={{
+        position:'absolute', zIndex:5, top:11, right:11,
+        display:'flex', alignItems:'center', gap:4,
+        background:'#e09400',
+        borderRadius:20,
+        padding:'3px 8px',
+        boxShadow:'0 1px 4px rgba(0,0,0,0.2)',
+      }}>
+        <div style={{
+          width:13, height:13,
+          display:'flex', alignItems:'center', justifyContent:'center',
+        }}>
+          <img src="assets/logo-white-trans.png" style={{width:'100%', height:'100%', objectFit:'contain'}} />
+        </div>
+        <span style={{fontFamily:"'Montserrat',sans-serif", fontSize:6.5, fontWeight:700, color:'#1a1a1a', letterSpacing:'0.08em', textTransform:'uppercase'}}>{brand.badge.label}</span>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   MAIN APP
+══════════════════════════════════════════════ */
+function setByPath(source, path, value) {
+  const keys = path.split('.');
+  const next = Array.isArray(source) ? [...source] : { ...source };
+  let current = next;
+
+  for (let index = 0; index < keys.length - 1; index += 1) {
+    const key = keys[index];
+    current[key] = Array.isArray(current[key]) ? [...current[key]] : { ...current[key] };
+    current = current[key];
+  }
+
+  current[keys[keys.length - 1]] = value;
+  return next;
+}
+
+function EditorField({ label, value, onChange, multiline = false }) {
+  const sharedProps = {
+    className: multiline ? 'editor-textarea' : 'editor-input',
+    value: value ?? '',
+    onChange: (event) => onChange(event.target.value),
+  };
+
+  return (
+    <div className="editor-field">
+      <label className="editor-label">{label}</label>
+      {multiline ? <textarea {...sharedProps} /> : <input {...sharedProps} />}
+    </div>
+  );
+}
+
+function EditorPanel({ content, onChange, onReset, onPhotoUpload, uploadedPhotoName }) {
+  const fields = [
+    {
+      title: 'Page',
+      items: [
+        ['Browser Title', 'page.title'],
+        ['Canvas Title', 'page.canvasTitle'],
+      ],
+    },
+    {
+      title: 'Brand',
+      items: [
+        ['Name', 'brand.name'],
+        ['Name Suffix', 'brand.nameSuffix'],
+        ['Full Name', 'brand.fullName'],
+        ['Full Name Sub', 'brand.fullNameSub'],
+        ['Tagline', 'brand.tagline'],
+        ['Category', 'brand.category'],
+        ['Badge Label', 'brand.badge.label'],
+      ],
+    },
+    {
+      title: 'Contact',
+      items: [
+        ['Phone', 'contact.phone'],
+        ['Email', 'contact.email'],
+        ['Website', 'contact.website'],
+        ['Address', 'contact.address'],
+      ],
+    },
+    {
+      title: 'QR',
+      items: [
+        ['QR URL', 'qr.url'],
+      ],
+    },
+  ];
+
+  const readValue = (path) => path.split('.').reduce((acc, key) => acc?.[key], content) ?? '';
+
+  return (
+    <aside className="editor-pane">
+      <div className="editor-scroll">
+        <div className="editor-kicker">Live Content Editor</div>
+        <div className="editor-title">Edit the default card data in the browser</div>
+        <div className="editor-copy">
+          The values start from <code>content.json</code>. Visitors can change them live, export the design, and a refresh brings the original defaults back.
+        </div>
+
+        <div className="editor-actions">
+          <button type="button" className="editor-button" onClick={onReset}>Reset Defaults</button>
+          <label className="editor-upload">
+            Upload Photo
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+              onChange={onPhotoUpload}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
+
+        <div className="editor-section">
+          <h3>Restaurant Photo</h3>
+          <div className="editor-help">
+            Replaces <code>assets/restro-photo.jpg</code> for this session only. PNG and JPG both work.
+          </div>
+          <div className="editor-file-note">
+            Current image: {uploadedPhotoName || 'Default from content.json'}
+          </div>
+        </div>
+
+        {fields.map((section) => (
+          <div className="editor-section" key={section.title}>
+            <h3>{section.title}</h3>
+            {section.items.map(([label, path]) => (
+              <EditorField
+                key={path}
+                label={label}
+                value={readValue(path)}
+                onChange={(value) => onChange(path, value)}
+                multiline={path === 'contact.address'}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+async function imageSourceToDataUrl(source) {
+  const response = await fetch(source);
+  const blob = await response.blob();
+
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function App() {
+  const [content, setContent] = React.useState(DEFAULT_CONTENT);
+  const [defaultContent, setDefaultContent] = React.useState(DEFAULT_CONTENT);
+  const [photoSrc, setPhotoSrc] = React.useState(DEFAULT_CONTENT.assets.restaurantPhoto);
+  const [defaultPhotoSrc, setDefaultPhotoSrc] = React.useState(DEFAULT_CONTENT.assets.restaurantPhoto);
+  const [uploadedPhotoName, setUploadedPhotoName] = React.useState('');
+  const [isPreparing, setIsPreparing] = React.useState(false);
+  const frontCardRef = React.useRef(null);
+  const backCardRef = React.useRef(null);
+
+  React.useEffect(() => {
+    document.title = DEFAULT_CONTENT.page.title;
+    fetch('content.json')
+      .then(r => r.json())
+      .then(data => {
+        setDefaultContent(data);
+        setContent(data);
+        setDefaultPhotoSrc(data.assets.restaurantPhoto);
+        setPhotoSrc(data.assets.restaurantPhoto);
+        document.title = data.page.title;
+      })
+      .catch(() => {
+        setDefaultContent(DEFAULT_CONTENT);
+        setContent(DEFAULT_CONTENT);
+        setDefaultPhotoSrc(DEFAULT_CONTENT.assets.restaurantPhoto);
+        setPhotoSrc(DEFAULT_CONTENT.assets.restaurantPhoto);
+      });
+  }, []);
+
+  React.useEffect(() => {
+    if (content?.page?.title) {
+      document.title = content.page.title;
+    }
+  }, [content]);
+
+  const handleFieldChange = React.useCallback((path, value) => {
+    setContent((current) => setByPath(current, path, value));
+  }, []);
+
+  const handleReset = React.useCallback(() => {
+    if (!defaultContent) return;
+    setContent(defaultContent);
+    setPhotoSrc(defaultPhotoSrc || defaultContent.assets.restaurantPhoto);
+    setUploadedPhotoName('');
+  }, [defaultContent, defaultPhotoSrc]);
+
+  const handlePhotoUpload = React.useCallback((event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const objectUrl = URL.createObjectURL(file);
+    setPhotoSrc((current) => {
+      if (current && current.startsWith('blob:')) {
+        URL.revokeObjectURL(current);
+      }
+      return objectUrl;
+    });
+    setUploadedPhotoName(file.name);
+    event.target.value = '';
+  }, []);
+
+  React.useEffect(() => (
+    () => {
+      if (photoSrc && photoSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(photoSrc);
+      }
+    }
+  ), [photoSrc]);
+
+  const exportCardAsSVG = React.useCallback(async (element, filename) => {
+    if (!element) return;
+    setIsPreparing(true);
+    try {
+      await document.fonts?.ready;
+      const clone = element.cloneNode(true);
+      const imageNodes = Array.from(clone.querySelectorAll('img'));
+      await Promise.all(imageNodes.map(async (img) => {
+        const source = img.getAttribute('src');
+        if (!source) return;
+        img.setAttribute('src', await imageSourceToDataUrl(source));
+      }));
+
+      clone.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+      const serializedMarkup = new XMLSerializer().serializeToString(clone);
+
+      const svgMarkup = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${PRINT_EXPORT.width}" height="${PRINT_EXPORT.height}" viewBox="0 0 ${PRINT_EXPORT.width} ${PRINT_EXPORT.height}">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&amp;family=Open+Sans:wght@300;400;600&amp;display=swap');
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+    </style>
+  </defs>
+  <foreignObject width="100%" height="100%">
+    ${serializedMarkup}
+  </foreignObject>
+</svg>`;
+
+      const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } finally {
+      setIsPreparing(false);
+    }
+  }, []);
+
+  return (
+    <div className="app-shell">
+      <div className="canvas-pane">
+        <DesignCanvas title={content.page.canvasTitle} style={{ width: '100%', height: '100%' }}>
+          <DCSection id="s1" title="Visting Card Design">
+            <DCArtboard id="front" label="Front" width={420} height={280}>
+              <div style={{
+                width:'100%', height:'100%',
+                background:'#c8922a',
+                borderRadius:8,
+                display:'flex', alignItems:'center', justifyContent:'center',
+              }}>
+                <CardBack photoSrc={photoSrc} content={content} qrUrl={content.qr.url} cardRef={frontCardRef} />
+              </div>
+            </DCArtboard>
+            <DCArtboard id="back" label="Back" width={420} height={280}>
+              <div style={{
+                width:'100%', height:'100%',
+                background:'#c8922a',
+                borderRadius:8,
+                display:'flex', alignItems:'center', justifyContent:'center',
+              }}>
+                <CardFront content={content} cardRef={backCardRef} />
+              </div>
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      </div>
+      <EditorPanel
+        content={content}
+        onChange={handleFieldChange}
+        onReset={handleReset}
+        onPhotoUpload={handlePhotoUpload}
+        uploadedPhotoName={uploadedPhotoName}
+      />
+      <OutputPanel
+        isPreparing={isPreparing}
+        onExportFront={() => exportCardAsSVG(frontCardRef.current, 'visiting-card-front.svg')}
+        onExportBack={() => exportCardAsSVG(backCardRef.current, 'visiting-card-back.svg')}
+      />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

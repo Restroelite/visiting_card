@@ -1,0 +1,29 @@
+{
+  "page": {
+    "title": "Visiting Card — Riverside Restaurant & Bar",
+    "canvasTitle": "Visiting Card — Riverside Restaurant & Bar"
+  },
+  "brand": {
+    "name": "Riverside",
+    "nameSuffix": " & Bar",
+    "fullName": "RIVERSIDE",
+    "fullNameSub": "RESTAURANT & BAR",
+    "tagline": "Fine Dining · Restaurant",
+    "category": "Fine Dining",
+    "badge": {
+      "label": "Restroelite"
+    }
+  },
+  "contact": {
+    "phone": "+977 9862466900",
+    "email": "riverside@example.com",
+    "website": "psinepal.com.np/restroelite",
+    "address": "Riverside Road, Kathmandu"
+  },
+  "qr": {
+    "url": "https://g.page/r/CQWRxw5Dw8JeEAI/review"
+  },
+  "assets": {
+    "restaurantPhoto": "assets/restro-photo.jpg"
+  }
+}
